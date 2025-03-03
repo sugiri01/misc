@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Values Charts</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: white;
+            position: relative;
+            height: 400px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #444;
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .reference-range {
+            display: inline-block;
+            margin-left: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        .reference-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 2px dashed rgba(100, 100, 100, 0.3);
+            z-index: 0;
+        }
+        .reference-label {
+            position: absolute;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lab Values Charts</h1>
+        
+        <!-- Hemoglobin Chart -->
+        <div class="chart-container">
+            <h2>Hemoglobin (Hb) <span class="reference-range">Reference Range: 13.5 - 17.5 g/dL</span></h2>
+            <canvas id="hbChart"></canvas>
+        </div>
+        
+        <!-- Urea Chart -->
+        <div class="chart-container">
+            <h2>Urea <span class="reference-range">Reference Range: 7 - 20 mg/dL</span></h2>
+            <canvas id="ureaChart"></canvas>
+        </div>
+        
+        <!-- Creatinine Chart -->
+        <div class="chart-container">
+            <h2>Creatinine <span class="reference-range">Reference Range: 0.7 - 1.2 mg/dL</span></h2>
+            <canvas id="creatinineChart"></canvas>
+        </div>
+        
+        <!-- Sodium Chart -->
+        <div class="chart-container">
+            <h2>Sodium <span class="reference-range">Reference Range: 135 - 145 mmol/L</span></h2>
+            <canvas id="sodiumChart"></canvas>
+        </div>
+        
+        <!-- Potassium Chart -->
+        <div class="chart-container">
+            <h2>Potassium <span class="reference-range">Reference Range: 3.5 - 5.0 mmol/L</span></h2>
+            <canvas id="potassiumChart"></canvas>
+        </div>
+        
+        <!-- Chloride Chart -->
+        <div class="chart-container">
+            <h2>Chloride <span class="reference-range">Reference Range: 98 - 107 mmol/L</span></h2>
+            <canvas id="chlorideChart"></canvas>
+        </div>
+        
+        <!-- Bicarbonate Chart -->
+        <div class="chart-container">
+            <h2>Bicarbonate <span class="reference-range">Reference Range: 22 - 29 mmol/L</span></h2>
+            <canvas id="bicarbChart"></canvas>
+        </div>
+        
+        <!-- TSH Chart -->
+        <div class="chart-container">
+            <h2>TSH <span class="reference-range">Reference Range: 0.35 - 5.5 mIU/L</span></h2>
+            <canvas id="tshChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Lab data
+        const labData = {
+            labels: ['Test 1', 'Test 2', 'Test 3', 'Test 4', 'Test 5', 'Test 6', 'Test 7'],
+            hb: [8.6, 8.2, 8.3, 8.7, 9.79, 10.08, 10.82],
+            urea: [72.8, 71.3, 69.1, 79.7, 55.97, 52.69, 45.41],
+            creatinine: [3.72, 3.7, 3.51, 3.94, 3.67, 3.51, 2.99],
+            sodium: [132, 135, 129.5, null, null, null, null],
+            potassium: [4, 4.2, 3.94, 3.64, null, null, null],
+            chloride: [96, 98, 93.9, null, null, null, null],
+            bicarb: [21, 22, 28.26, null, null, null, null],
+            tsh: [36.8, null, null, null, null, null, null]
+        };
+
+        // Reference ranges
+        const referenceRanges = {
+            hb: { min: 13.5, max: 17.5 },
+            urea: { min: 7, max: 20 },
+            creatinine: { min: 0.7, max: 1.2 },
+            sodium: { min: 135, max: 145 },
+            potassium: { min: 3.5, max: 5.0 },
+            chloride: { min: 98, max: 107 },
+            bicarb: { min: 22, max: 29 },
+            tsh: { min: 0.35, max: 5.5 }
+        };
+
+        // Chart colors
+        const chartColors = {
+            hb: 'rgb(255, 87, 51)',
+            urea: 'rgb(51, 255, 87)',
+            creatinine: 'rgb(51, 87, 255)',
+            sodium: 'rgb(255, 51, 245)',
+            potassium: 'rgb(245, 255, 51)',
+            chloride: 'rgb(51, 255, 245)',
+            bicarb: 'rgb(245, 51, 255)',
+            tsh: 'rgb(255, 140, 51)'
+        };
+
+        // Function to create a chart
+        function createChart(canvasId, dataKey, color) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            // Filter out null values
+            const filteredData = [];
+            const filteredLabels = [];
+            
+            for (let i = 0; i < labData[dataKey].length; i++) {
+                if (labData[dataKey][i] !== null) {
+                    filteredData.push(labData[dataKey][i]);
+                    filteredLabels.push(labData.labels[i]);
+                }
+            }
+            
+            // No data available
+            if (filteredData.length === 0) {
+                ctx.font = '20px Arial';
+                ctx.fillText('No data available', 50, 100);
+                return;
+            }
+            
+            // Set min and max for y-axis
+            const values = filteredData;
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            const padding = (maxValue - minValue) * 0.2;
+            
+            let yMin = Math.max(0, minValue - padding);
+            let yMax = maxValue + padding;
+            
+            // Ensure reference ranges are visible
+            const range = referenceRanges[dataKey];
+            if (range.min < yMin) yMin = range.min * 0.9;
+            if (range.max > yMax) yMax = range.max * 1.1;
+            
+            // Create the plugin for reference lines
+            const referenceLinePlugin = {
+                id: 'referenceLine',
+                beforeDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const yAxis = chart.scales.y;
+                    const chartArea = chart.chartArea;
+                    
+                    // Draw min line
+                    const minY = yAxis.getPixelForValue(range.min);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(chartArea.left, minY);
+                    ctx.lineTo(chartArea.right, minY);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                    
+                    // Draw min label
+                    ctx.fillStyle = 'rgba(100, 100, 100, 0.8)';
+                    ctx.fillText('Min', chartArea.right - 30, minY - 5);
+                    
+                    // Draw max line
+                    const maxY = yAxis.getPixelForValue(range.max);
+                    ctx.beginPath();
+                    ctx.moveTo(chartArea.left, maxY);
+                    ctx.lineTo(chartArea.right, maxY);
+                    ctx.stroke();
+                    
+                    // Draw max label
+                    ctx.fillText('Max', chartArea.right - 30, maxY - 5);
+                    
+                    ctx.restore();
+                }
+            };
+            
+            // Create chart
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: filteredLabels,
+                    datasets: [{
+                        label: dataKey.charAt(0).toUpperCase() + dataKey.slice(1),
+                        data: filteredData,
+                        fill: false,
+                        borderColor: color,
+                        backgroundColor: color,
+                        tension: 0.1,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: yMin,
+                            max: yMax,
+                            grid: {
+                                color: '#e0e0e0'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1);
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    let status = '';
+                                    
+                                    if (value < range.min) {
+                                        status = ' (Below normal)';
+                                    } else if (value > range.max) {
+                                        status = ' (Above normal)';
+                                    } else {
+                                        status = ' (Normal)';
+                                    }
+                                    
+                                    return `${context.dataset.label}: ${value}${status}`;
+                                }
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                },
+                plugins: [referenceLinePlugin]
+            });
+        }
+
+        // Create all charts when the window loads
+        window.onload = function() {
+            try {
+                createChart('hbChart', 'hb', chartColors.hb);
+                createChart('ureaChart', 'urea', chartColors.urea);
+                createChart('creatinineChart', 'creatinine', chartColors.creatinine);
+                createChart('sodiumChart', 'sodium', chartColors.sodium);
+                createChart('potassiumChart', 'potassium', chartColors.potassium);
+                createChart('chlorideChart', 'chloride', chartColors.chloride);
+                createChart('bicarbChart', 'bicarb', chartColors.bicarb);
+                createChart('tshChart', 'tsh', chartColors.tsh);
+                
+                console.log('All charts created successfully!');
+            } catch (error) {
+                console.error("Error creating charts:", error);
+                document.body.innerHTML += `
+                    <div style="color: red; padding: 20px; border: 1px solid red; margin: 20px;">
+                        <h2>Error rendering charts</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>
